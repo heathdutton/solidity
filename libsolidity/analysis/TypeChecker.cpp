@@ -2398,6 +2398,36 @@ void TypeChecker::typeCheckBytesConcatFunction(
 	}
 }
 
+void TypeChecker::typeCheckERC7201Builtin(FunctionCall const& _functionCall, FunctionType const* _functionType)
+{
+	if (_functionCall.arguments().size() > 0)
+	{
+		auto const* literalArg = dynamic_cast<Literal const*>(_functionCall.arguments()[0].get());
+		auto const* variableString = dynamic_cast<Identifier const*>(_functionCall.arguments()[0].get());
+		bool validArg = false;
+
+		if (
+			(
+				literalArg &&
+				dynamic_cast<StringLiteralType const*>(literalArg->annotation().type)
+			) ||
+			(
+				variableString &&
+				dynamic_cast<ArrayType const*>(variableString->annotation().type) &&
+				dynamic_cast<ArrayType const*>(variableString->annotation().type)->isString()
+			)
+		)
+			validArg = true;
+
+		if (!validArg)
+			m_errorReporter.fatalTypeError(
+				6896_error, _functionCall.arguments()[0]->location(),
+				"Builtin erc7201 can only accept strings as argument"
+			);
+	}
+	typeCheckFunctionGeneralChecks(_functionCall, _functionType);
+}
+
 void TypeChecker::typeCheckFunctionGeneralChecks(
 	FunctionCall const& _functionCall,
 	FunctionTypePointer _functionType
@@ -2825,6 +2855,10 @@ bool TypeChecker::visit(FunctionCall const& _functionCall)
 			returnTypes = functionType->returnParameterTypes();
 			break;
 		}
+		case FunctionType::Kind::ERC7201:
+			typeCheckERC7201Builtin(_functionCall, functionType);
+			returnTypes = functionType->returnParameterTypes();
+			break;
 		default:
 		{
 			typeCheckFunctionCall(_functionCall, functionType);

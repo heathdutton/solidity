@@ -2405,6 +2405,7 @@ void TypeChecker::typeCheckERC7201Builtin(FunctionCall const& _functionCall, Fun
 		auto const* literalArg = dynamic_cast<Literal const*>(_functionCall.arguments()[0].get());
 		auto const* variableString = dynamic_cast<Identifier const*>(_functionCall.arguments()[0].get());
 		bool validArg = false;
+		std::string errorMsg;
 
 		if (
 			(
@@ -2414,7 +2415,8 @@ void TypeChecker::typeCheckERC7201Builtin(FunctionCall const& _functionCall, Fun
 			(
 				variableString &&
 				dynamic_cast<ArrayType const*>(variableString->annotation().type) &&
-				dynamic_cast<ArrayType const*>(variableString->annotation().type)->isString()
+				dynamic_cast<ArrayType const*>(variableString->annotation().type)->isString() &&
+				*variableString->annotation().isConstant
 			)
 		)
 			validArg = true;
@@ -2422,7 +2424,7 @@ void TypeChecker::typeCheckERC7201Builtin(FunctionCall const& _functionCall, Fun
 		if (!validArg)
 			m_errorReporter.fatalTypeError(
 				6896_error, _functionCall.arguments()[0]->location(),
-				"Builtin erc7201 can only accept strings as argument"
+				"The argument of builtin erc7201 must be either a constant string variable or a string literal."
 			);
 	}
 	typeCheckFunctionGeneralChecks(_functionCall, _functionType);

@@ -136,7 +136,7 @@ void PostTypeContractLevelChecker::checkStorageLayoutSpecifier(ContractDefinitio
 	rational baseSlotRationalValue;
 	if (integerType)
 	{
-		std::optional<ConstantEvaluator::TypedRational> typedRational = ConstantEvaluator::evaluate(m_errorReporter, baseSlotExpression);
+		std::optional<ConstantEvaluator::TypedValue> typedRational = ConstantEvaluator::evaluate(m_errorReporter, baseSlotExpression);
 		if (!typedRational)
 		{
 			m_errorReporter.typeError(
@@ -147,7 +147,8 @@ void PostTypeContractLevelChecker::checkStorageLayoutSpecifier(ContractDefinitio
 			);
 			return;
 		}
-		baseSlotRationalValue = typedRational->value;
+		solAssert(std::holds_alternative<rational>(typedRational->value));
+		baseSlotRationalValue = std::get<rational>(typedRational->value);
 	}
 	else
 	{

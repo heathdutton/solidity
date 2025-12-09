@@ -1526,8 +1526,8 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		case FunctionType::Kind::ERC7201:
 		{
 			auto typedRational = ConstantEvaluator::tryEvaluate(_functionCall);
-			solAssert(typedRational.has_value());
-			auto rationalValue = typedRational->value;
+			solAssert(typedRational && std::holds_alternative<rational>(typedRational->value));
+			auto rationalValue = std::get<rational>(typedRational->value);
 			solAssert(rationalValue.denominator() == 1);
 			bigint value = rationalValue.numerator();
 			solAssert(value <= std::numeric_limits<u256>::max());

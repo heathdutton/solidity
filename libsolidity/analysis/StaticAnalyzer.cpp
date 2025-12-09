@@ -317,7 +317,10 @@ bool StaticAnalyzer::visit(BinaryOperation const& _operation)
 		ConstantEvaluator::evaluate(m_errorReporter, _operation.leftExpression())
 	)
 		if (auto rhs = ConstantEvaluator::evaluate(m_errorReporter, _operation.rightExpression()))
-			if (rhs->value == 0)
+			if (
+				std::holds_alternative<rational>(rhs->value) &&
+				std::get<rational>(rhs->value) == 0
+			)
 				m_errorReporter.typeError(
 					1211_error,
 					_operation.location(),
@@ -338,7 +341,10 @@ bool StaticAnalyzer::visit(FunctionCall const& _functionCall)
 			solAssert(_functionCall.arguments().size() == 3, "");
 			if (*_functionCall.arguments()[2]->annotation().isPure)
 				if (auto lastArg = ConstantEvaluator::evaluate(m_errorReporter, *(_functionCall.arguments())[2]))
-					if (lastArg->value == 0)
+					if (
+						std::holds_alternative<rational>(lastArg->value) &&
+						std::get<rational>(lastArg->value) == 0
+					)
 						m_errorReporter.typeError(
 							4195_error,
 							_functionCall.location(),

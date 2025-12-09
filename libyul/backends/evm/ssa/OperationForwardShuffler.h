@@ -113,7 +113,8 @@ private:
 		{
 			targetMinCounts.reserve(_args.size() + _liveOut.size());
 			for (auto const& arg: _args)
-				++targetMinCounts[arg];
+				if (!arg.isJunk())
+					++targetMinCounts[arg];
 			for (auto const& _liveValueId: _liveOut | ranges::views::keys)
 				++targetMinCounts[Slot::makeValueID(_liveValueId)];
 		}
@@ -134,10 +135,14 @@ private:
 
 		bool argsRegionIsCorrect() const
 		{
-			return targetStats.targetSize == stack.size() && ranges::equal(
-				stack.data().rbegin(), stack.data().rbegin() + static_cast<std::ptrdiff_t>(targetStats.args.size()),
-				targetStats.args.rbegin(), targetStats.args.rend()
-			);
+			if (targetStats.targetSize != stack.size())
+				return false;
+
+			for (size_t i = 0; i < targetStats.args.size(); ++i)
+				if (!isArgsCompatible(StackOffset{stack.size() - i - 1}, StackOffset{stack.size() - i - 1}))
+					return false;
+
+			return true;
 		}
 
 		bool requiredInArgs(Slot const& _slot) const
@@ -805,7 +810,7 @@ private:
 			for (StackOffset offset{ops.targetStats.tailSize}; offset < ops.targetStats.targetSize; ++offset.value)
 			{
 				Slot const& arg = ops.targetArg(offset);
-				if (ops.stackStats.totalCount(arg) < ops.targetMinCount(arg) || ops.stackStats.argsCount(arg) < ops.targetArgsCount(arg))
+				if (!arg.isJunk() && (ops.stackStats.totalCount(arg) < ops.targetMinCount(arg) || ops.stackStats.argsCount(arg) < ops.targetArgsCount(arg)))
 				{
 					if (auto sourceDepth = ops.stack.findSlotDepth(arg))
 					{

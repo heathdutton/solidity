@@ -138,12 +138,22 @@ BOOST_AUTO_TEST_SUITE(OperationForwardShufflerTest)
 
 BOOST_AUTO_TEST_CASE(TestCycle)
 {
-	Stack::Data data = parseStackData(" [v64, JUNK, v64, JUNK, v60, v74, JUNK, v60]");
-	Stack::Data args = parseStackData(" [v74, lit15]");
+	Stack::Data data = parseStackData("[v64, JUNK, v64, JUNK, v60, v74, JUNK, v60]");
+	Stack::Data args = parseStackData("[v74, lit15]");
 	Liveness liveness = parseLiveness("[v60, v64]");
 
 	Stack stack(data, {});
 	ssa::OperationForwardShuffler<StackManipulationCallbacks>::shuffle(stack, args, liveness, 7, false);
+}
+
+BOOST_AUTO_TEST_CASE(TestJunk)
+{
+	Stack::Data data = parseStackData("[v188, JUNK, v199, JUNK, JUNK, JUNK, JUNK, JUNK, JUNK, JUNK, v185, v190, v189, v191, JUNK, phi112, v204, v205, v206]");
+	Stack::Data args = parseStackData("[v188, v199, JUNK, JUNK, JUNK, JUNK, JUNK, JUNK, JUNK, JUNK, v185, v190, v189, v191, JUNK, v206, v205, v204]");
+	Liveness liveness = parseLiveness("");
+
+	Stack stack(data, {});
+	ssa::OperationForwardShuffler<StackManipulationCallbacks>::shuffle(stack, args, liveness, args.size(), false);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

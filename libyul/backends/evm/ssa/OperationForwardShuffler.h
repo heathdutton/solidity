@@ -702,7 +702,12 @@ private:
 				if (_ops.stackStats.totalCount(arg) < _ops.targetMinCount(arg))
 					if (shrinkStack(_ops.stack, _ops))
 						return true;
-
+			if (!_ops.argsRegionIsCorrect())
+				if (shrinkStack(_ops.stack, _ops))
+					return true;
+				else
+					; // todo this is annoying and we have to do sth about stack too deep because the args isnt correct, we couldnt fix anything, and we couldnt shrink
+					  //	  a way out of this is to spill the top-most thing to memory and shrink by that
 		}
 		return false;
 	}
@@ -874,7 +879,7 @@ private:
 					!ops.isArgsCompatible(offset, offset) &&
 					!ops.isSourceCompatible(offset, stackTopOffset) &&
 					ops.requiredInArgs(_stack[offset]) &&
-					ops.stackStats.argsCount(_stack[offset]) < ops.targetArgsCount(_stack[offset])
+					ops.stackStats.argsCount(_stack[offset]) <= ops.targetArgsCount(_stack[offset])
 				)
 				{
 					_stack.swap(offset);

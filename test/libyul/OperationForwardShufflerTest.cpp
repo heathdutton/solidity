@@ -111,23 +111,29 @@ struct StackManipulationCallbacks
 	void swap(size_t _depth)
 	{
 		++numOps;
-		std::cout << "SWAP" << _depth << std::flush << " + ";
+		std::cout << fmt::format("SWAP {} ", _depth) << std::flush;
+		if (hook) (*hook)();
 	}
 	void dup(size_t _depth)
 	{
 		++numOps;
-		std::cout << "DUP" << _depth << std::flush << " + ";
+		std::cout << fmt::format("DUP {} ", _depth) << std::flush;
+		if (hook) (*hook)();
 	}
 	void push(Slot const& _slot)
 	{
 		++numOps;
-		std::cout << "PUSH " << slotToString(_slot) << std::flush << " + ";
+		std::cout << "PUSH " << slotToString(_slot) << std::flush;
+		if (hook) (*hook)();
 	}
 	void pop()
 	{
 		++numOps;
-		std::cout << "POP" << std::flush << " + ";
+		std::cout << "POP " << std::flush;
+		if (hook) (*hook)();
 	}
+
+	std::optional<std::function<void()>> hook = std::nullopt;
 };
 using Stack = solidity::yul::ssa::Stack<StackManipulationCallbacks>;
 }
@@ -148,11 +154,11 @@ BOOST_AUTO_TEST_CASE(TestCycle)
 
 BOOST_AUTO_TEST_CASE(TestJunk)
 {
-	Stack::Data data = parseStackData("[v188, JUNK, v199, JUNK, JUNK, JUNK, JUNK, JUNK, JUNK, JUNK, v185, v190, v189, v191, JUNK, phi112, v204, v205, v206]");
-	Stack::Data args = parseStackData("[v188, v199, JUNK, JUNK, JUNK, JUNK, JUNK, JUNK, JUNK, JUNK, v185, v190, v189, v191, JUNK, v206, v205, v204]");
+	Stack::Data data = parseStackData("[JUNK, JUNK, v56, v57, JUNK, JUNK]");
+	Stack::Data args = parseStackData("[JUNK, JUNK, v56, v57, lit0, v56, lit11]");
 	Liveness liveness = parseLiveness("");
 
-	Stack stack(data, {});
+	Stack stack(data, {.hook = [&]{ std::cout << " -> " << ssa::stackToString(data) << std::endl; }});
 	ssa::OperationForwardShuffler<StackManipulationCallbacks>::shuffle(stack, args, liveness, args.size(), false);
 }
 

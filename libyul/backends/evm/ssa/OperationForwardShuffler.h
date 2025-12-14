@@ -702,12 +702,12 @@ private:
 				if (_ops.stackStats.totalCount(arg) < _ops.targetMinCount(arg))
 					if (shrinkStack(_ops.stack, _ops))
 						return true;
-			if (!_ops.argsRegionIsCorrect())
+			/*if (!_ops.argsRegionIsCorrect())
 				if (shrinkStack(_ops.stack, _ops))
 					return true;
 				else
 					; // todo this is annoying and we have to do sth about stack too deep because the args isnt correct, we couldnt fix anything, and we couldnt shrink
-					  //	  a way out of this is to spill the top-most thing to memory and shrink by that
+					  //	  a way out of this is to spill the top-most thing to memory and shrink by that*/
 		}
 		return false;
 	}
@@ -744,6 +744,16 @@ private:
 			// todo: in the future we'll want stack too deep handling here and
 			//		 dup up the args if possible or mload them by explicitly calling _stack.reportStackTooDeep(arg)
 			yulAssert(_stack.size() < _targetStats.targetSize);
+		}
+
+		{
+			// todo
+			// if there's something at the top of the stack that has to be popped anyways:
+			//     - its often enough on stack to be popped (more than required)
+			//	   - its not in the right position
+			//     - we don't need it to fill the stack to the target size, ie, the num of required elements plus
+			//       the stack deficit (what is still missing) overshoot target size
+			//     - all below slots are also something that has to be popped or the tail end is finished
 		}
 
 		if (_stack.size() < _targetStats.tailSize)

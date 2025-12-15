@@ -202,6 +202,11 @@ private:
 			return arg.isJunk() || stack[_sourceOffset] == arg;
 		}
 
+		bool targetArbitrary(StackOffset _targetOffset) const
+		{
+			return targetArg(_targetOffset).isJunk();
+		}
+
 		bool isSourceCompatible(StackOffset const& _sourceOffset1, StackOffset const& _sourceOffset2) const
 		{
 			return _sourceOffset1 < stack.size() && _sourceOffset2 < stack.size() && stack[_sourceOffset1] == stack[_sourceOffset2];
@@ -239,6 +244,9 @@ private:
 		{
 			// This slot needs to be moved into args and there is no tail slot of the same kind further up in the stack.
 			auto const& slot = _ops.stack.slot(sourceOffset);
+			// no need top dup deep junk
+			if (slot.isJunk())
+				continue;
 			// check if we have more of the same slot further up in the stack
 			bool const neededInArgs = _ops.targetArgsCount(slot) > _ops.stackStats.argsCount(slot);
 			bool const needMore = _ops.targetMinCount(slot) > _ops.stackStats.totalCount(slot);
@@ -588,7 +596,7 @@ private:
 
 	static std::optional<StackOffset> suitableArgsOffsetFor(Ops const& _ops, StackOffset const& _outOfPositionOffset)
 	{
-		yulAssert(!_ops.isArgsCompatible(_outOfPositionOffset, _outOfPositionOffset));
+		yulAssert(!_ops.isArgsCompatible(_outOfPositionOffset, _outOfPositionOffset) || (_ops.targetArbitrary(_outOfPositionOffset) && !_ops.stack.slot(_outOfPositionOffset).isJunk()));
 		for (StackOffset offset: stackArgsRange(_ops.stack, _ops.targetStats.tailSize))
 			if (
 				offset != _outOfPositionOffset &&
@@ -681,7 +689,10 @@ private:
 			if (
 				_ops.stack.swapReachable(offset) &&
 				!_ops.isArgsCompatible(offset, stackTop) && // we wouldn't just be swapping identical things
-				!_ops.isArgsCompatible(offset, offset) // the slot at offset isn't final
+				(
+					!_ops.isArgsCompatible(offset, offset) || // the slot at offset isn't final
+					(_ops.targetArbitrary(offset) && !_ops.stack.slot(offset).isJunk()) // or the target is arbitrary and the current slot isn't already junk
+				)
 			)
 			{
 				if (auto targetOffset = suitableArgsOffsetFor(_ops, offset))

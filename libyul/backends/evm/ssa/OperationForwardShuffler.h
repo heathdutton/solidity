@@ -39,7 +39,7 @@ public:
 		yulAssert(_liveOut.size() <= targetStats.tailSize, "not enough tail space");
 		{
 			// admissibility: check that all required values are on stack
-			StackStats stackStats(_stack, targetStats.args.size());
+			StackStats stackStats(_stack, targetStats.args, _targetSize);
 			for (const auto& liveVariable: _liveOut | ranges::views::keys | ranges::views::transform(Slot::makeValueID))
 				yulAssert(_stack.canBeFreelyGenerated(liveVariable) || stackStats.totalCount(liveVariable) > 0);
 			for (const auto& arg: _args)
@@ -58,19 +58,23 @@ private:
 
 	struct StackStats
 	{
-		StackStats(Stack<Callback> const& _stack, size_t _argsRegionSize)
+		StackStats(Stack<Callback> const& _stack, std::vector<Slot> const& _argsTarget, size_t _targetSize)
 		{
 			histogram.reserve(_stack.size());
 			histogramReachable.reserve(ReachableStackDepth);
 			histogramTail.reserve(_stack.size());
-			histogramArgs.reserve(_argsRegionSize);
+			histogramArgs.reserve(_argsTarget.size());
+			auto const nTail = _targetSize - _argsTarget.size();
 			for (auto const& [i, slot]: _stack | ranges::views::enumerate)
 			{
 				++histogram[slot];
-				if (_stack.size() >= _argsRegionSize && i < _stack.size() - _argsRegionSize)
+				if (i < nTail)
 					++histogramTail[slot];
 				else
-					++histogramArgs[slot];
+					// if the slot points to a junk slot in the target, it is already 'used up' in this iteration so we don't mark it as such
+					// targetSize = argsSize + tailSize
+					if (i >= _targetSize || !_argsTarget[i - nTail].isJunk())
+						++histogramArgs[slot];
 				if (_stack.size() - i - 1 < ReachableStackDepth)
 					++histogramReachable[slot];
 			}
@@ -128,7 +132,7 @@ private:
 	struct Ops
 	{
 		Ops(Stack<Callback>& _stack, TargetStats const& _targetStats):
-			stackStats(_stack, _targetStats.args.size()),
+			stackStats(_stack, _targetStats.args, _targetStats.targetSize),
 			stack(_stack),
 			targetStats(_targetStats)
 		{}

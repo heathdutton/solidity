@@ -35,6 +35,7 @@
 using namespace solidity;
 using namespace solidity::frontend;
 using namespace solidity::langutil;
+using namespace solidity::util;
 
 using TypedValue = ConstantEvaluator::TypedValue;
 
@@ -265,15 +266,13 @@ std::optional<TypedValue> convertType(std::optional<TypedValue> const& _value, T
 		return std::nullopt;
 
 	return std::visit(util::GenericVisitor{
-			[&](std::string const& value) {
-				return convertType(value, _type);
-			},
-			[&](rational const& value) {
-				return convertType(value, _type);
-			}
+		[&](std::string const& value) {
+			return convertType(value, _type);
 		},
-		_value->value
-	);
+		[&](rational const& value) {
+			return convertType(value, _type);
+		}
+	}, _value->value);
 }
 
 std::optional<TypedValue> constantToTypedValue(Type const& _type)
@@ -409,9 +408,9 @@ void ConstantEvaluator::endVisit(BinaryOperation const& _operation)
 		return;
 
 	if (std::optional<rational> value = evaluateBinaryOperator(
-			_operation.getOperator(),
-			std::get<rational>(left->value),
-			std::get<rational>(right->value)
+		_operation.getOperator(),
+		std::get<rational>(left->value),
+		std::get<rational>(right->value)
 	))
 	{
 		std::optional<TypedValue> convertedValue = convertType(*value, *resultType);
@@ -446,9 +445,6 @@ void ConstantEvaluator::endVisit(TupleExpression const& _tuple)
 
 void ConstantEvaluator::endVisit(FunctionCall const& _functionCall)
 {
-	using util::keccak256;
-	using util::h256;
-
 	auto const* builtinFunction = dynamic_cast<MagicVariableDeclaration const*>(ASTNode::referencedDeclaration(_functionCall.expression()));
 	if (!builtinFunction)
 		return;

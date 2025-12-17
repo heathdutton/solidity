@@ -1731,8 +1731,8 @@ void IRGeneratorForStatements::endVisit(FunctionCall const& _functionCall)
 	{
 		solAssert(arguments.size() == 1);
 		auto typedRational = ConstantEvaluator::tryEvaluate(_functionCall);
-		solAssert(typedRational && std::holds_alternative<rational>(typedRational->value));
-		auto rationalValue = std::get<rational>(typedRational->value);
+		solAssert(std::holds_alternative<rational>(typedRational.value));
+		auto rationalValue = std::get<rational>(typedRational.value);
 		solAssert(rationalValue.denominator() == 1);
 		bigint value = rationalValue.numerator();
 		solAssert(value <= std::numeric_limits<u256>::max());

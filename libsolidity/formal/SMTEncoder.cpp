@@ -3124,9 +3124,9 @@ RationalNumberType const* SMTEncoder::isConstant(Expression const& _expr)
 
 	if (
 		auto typedValue = ConstantEvaluator::tryEvaluate(_expr);
-		typedValue && std::holds_alternative<rational>(typedValue->value)
+		std::holds_alternative<rational>(typedValue.value)
 	)
-		return TypeProvider::rationalNumber(std::get<rational>(typedValue->value));
+		return TypeProvider::rationalNumber(std::get<rational>(typedValue.value));
 
 	return nullptr;
 }

@@ -9,7 +9,12 @@
 # that refer to the same person (diacritics vs no diacritics, name vs nickname, etc.).
 #
 # Usage:
-#    <script name>.sh <revision>
+#    <script name>.sh <revision> [<target-ref>]
+#
+# Arguments:
+#    <revision>    - Starting revision (e.g., v0.8.32)
+#    <target-ref>  - Target ref to compare against (default: develop)
+#                    Examples: develop, origin/develop, upstream/develop
 #
 # ------------------------------------------------------------------------------
 # This file is part of solidity.
@@ -36,13 +41,18 @@ script_dir=$(dirname "$0")
 # shellcheck source=scripts/common.sh
 source "${script_dir}/common.sh"
 
-(( $# == 1)) || fail "Wrong number of arguments. Usage: $0 <revision>."
+(( $# >= 1 && $# <= 2 )) || fail "Wrong number of arguments. Usage: $0 <revision> [<target-ref>]."
 
 revision="$1"
+# Default to local develop and its configured tracking branch
+target_ref="${2:-develop}"
+
+upstream=$(git rev-parse --abbrev-ref "${target_ref}@{upstream}" 2>/dev/null || true)
+echo "Listing contributors from ${revision} to ${target_ref}${upstream:+ (tracking: $upstream)}..." >&2
 
 # NOTE: Commas are removed from any names containing them. It would look confusing otherwise, given
 # that the list is delimited by commas. Hopefully no contributor uses a comma as their nickname.
-git shortlog --summary "${revision}..origin/develop" |
+git shortlog --summary "${revision}..${target_ref}" |
     cut --field 2 |
     tr --delete , |
     sort |
